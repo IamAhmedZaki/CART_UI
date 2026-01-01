@@ -5,21 +5,42 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import cardImg from "/assets/cpm_club_car.webp";
-import logo from "/assets/e-z-go.webp";
-import yamaha from "/assets/yamaha.webp";
-import clubPro from "/assets/clubpro_logo.webp";
-import clubCar from "/assets/clubcar.webp";
-import { api } from "../utils/api";
-import { getSelectionsData, setSelectionData } from "../Components/data";
+import { api, IMAGE_URL } from "../utils/api";
 
-// ...imports remain the same
+// Skeleton Loader Component
+const SkeletonLoader = () => (
+  <div className="space-y-4 animate-pulse">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="rounded-xl overflow-hidden border border-gray-300 bg-white shadow-md">
+        <div className="w-full flex justify-between items-center px-6 py-5 bg-gray-100">
+          <div className="h-4 bg-gray-300 rounded w-32"></div>
+          <div className="h-5 w-5 bg-gray-300 rounded-full"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// Full Page Loader for initial brand load
+const PageLoader = () => (
+  <div className="min-h-screen bg-white flex items-center justify-center">
+    <div className="text-center">
+      <div className="relative inline-block">
+        <div className="w-20 h-20 border-4 border-gray-200 rounded-full"></div>
+        <div className="absolute top-0 left-0 w-20 h-20 border-4 border-[#f9c821] rounded-full border-t-transparent animate-spin"></div>
+      </div>
+      <p className="mt-6 text-lg text-gray-600 font-medium">Loading your golf cart builder...</p>
+    </div>
+  </div>
+);
+
 export default function GolfCartBuilder() {
   const { brandSlug } = useParams();
   const [brand, setBrand] = useState(null);
   const [selectedModel, setSelectedModel] = useState(null);
   const [groupedProducts, setGroupedProducts] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [brandLogo, setBrandLogo] = useState(false);
+  const [loading, setLoading] = useState(true); // Start as true for initial load
+  const [brandLogo, setBrandLogo] = useState(null);
 
   const { addItem } = useCart();
   const navigate = useNavigate();
@@ -30,15 +51,29 @@ export default function GolfCartBuilder() {
   // Fetch brand and default model
   useEffect(() => {
     const fetchBrand = async () => {
+      setGroupedProducts({})
+      setLoading(true); // Ensure loading state is active
       try {
-        const brandMap = { "ez-go": 3, "club-car": 1, "yamaha": 4, "clubpro": 2 };
-        const data = await api.get(`/brands/${brandMap[brandSlug]}`);
+        const data = await api.get(`/brands/slug/${brandSlug}`);
+        
         setBrand(data);
-        if (data.models?.length) setSelectedModel(data.models[0]);
+
+        if (data.logo) {
+          setBrandLogo(`${IMAGE_URL}${data.logo}`);
+        } else {
+          setBrandLogo(null);
+        }
+
+        if (data.models?.length > 0) {
+          setSelectedModel(data.models[0]);
+        }
       } catch (error) {
         console.error("Error fetching brand:", error);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchBrand();
   }, [brandSlug]);
 
@@ -46,20 +81,29 @@ export default function GolfCartBuilder() {
   useEffect(() => {
     if (!selectedModel?.id) {
       setGroupedProducts({});
+      setOpenSection(null);
       return;
     }
-    setLoading(true);
+
+    setLoading(true); // Show loader when switching models
+
     api.get(`/models/${selectedModel.id}`)
       .then((modelData) => {
         const grouped = modelData.products.reduce((acc, product) => {
           const typeName = product.productType.name;
           if (!acc[typeName]) acc[typeName] = [];
-          acc[typeName].push({ ...product, price: parseFloat(product.salePrice || product.regularPrice) });
+          acc[typeName].push({ 
+            ...product, 
+            price: parseFloat(product.salePrice || product.regularPrice) 
+          });
           return acc;
         }, {});
-        setGroupedProducts(grouped);
 
-        setSelections({ model: { name: selectedModel.name, price: selectedModel.price || 0 }, items: {} });
+        setGroupedProducts(grouped);
+        setSelections({ 
+          model: { name: selectedModel.name, price: selectedModel.price || 0 }, 
+          items: {} 
+        });
 
         const firstCategory = Object.keys(grouped)[0];
         if (firstCategory) setOpenSection(firstCategory);
@@ -68,13 +112,7 @@ export default function GolfCartBuilder() {
       .finally(() => setLoading(false));
   }, [selectedModel]);
 
-  // Set brand logo
-  useEffect(() => {
-    const logos = { "ez-go": logo, "club-car": clubCar, "yamaha": yamaha, "clubpro": clubPro };
-    setBrandLogo(logos[brandSlug] || false);
-  }, [brandSlug]);
-
-  // Helpers
+  // ... rest of your helpers remain unchanged
   const isMultiSelectCategory = (category) => !["Enclosure", "Color"].includes(category);
   const getSelectedForCategory = (category) => selections.items[category] || (isMultiSelectCategory(category) ? [] : null);
   const isSelected = (category, product) => isMultiSelectCategory(category)
@@ -82,7 +120,7 @@ export default function GolfCartBuilder() {
     : selections.items[category]?.id === product.id;
 
   const handleSelect = (category, product) => {
-    if (product.stock === 0) return; // Cannot select out-of-stock products
+    if (product.stock === 0) return;
 
     if (isMultiSelectCategory(category)) {
       setSelections(prev => {
@@ -126,28 +164,39 @@ export default function GolfCartBuilder() {
     Object.values(selections.items).flat().reduce((sum, item) => sum + (item?.price || 0), 0)
   ).toFixed(2);
 
+  // Show full page loader until brand is loaded
+  if (loading && !brand) {
+    return <PageLoader />;
+  }
+
   return (
     <div className="min-h-screen bg-white text-gray-800 font-sans pt-8 pb-20">
       {/* Header */}
       <div className="container mx-auto px-6 mb-8">
         <div className="flex items-center gap-4 text-xs md:text-sm tracking-widest text-gray-500 mb-2">
-          <span className="text-[#f9c821]">HOME</span> / {brand?.name?.toUpperCase()}
+          <span className="text-[#f9c821]">HOME</span> / {brand?.name?.toUpperCase() || "LOADING..."}
         </div>
         <h1 className="flex items-center justify-between text-3xl md:text-5xl font-serif font-bold">
           <div className="flex items-center gap-2">
             <span className="text-gray-900">Build Your</span>
-            <span className="text-[#f9c821]">{brand?.name}</span>
+            <span className="text-[#f9c821]">{brand?.name || "..."}</span>
           </div>
-          <img src={brandLogo} alt={`${brand?.name} Logo`} className="h-6 md:h-10 object-contain" />
+          {brandLogo ? (
+            <img src={brandLogo} alt={`${brand?.name} Logo`} className="h-6 md:h-10 object-contain" />
+          ) : (
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+          )}
         </h1>
       </div>
 
       <div className="container mx-auto px-6 flex flex-col lg:flex-row gap-8 lg:gap-12">
-        {/* Left */}
+        {/* Left - Image */}
         <div className="lg:w-[65%]">
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 h-[400px] lg:h-[700px] group">
-            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              style={{ backgroundImage: `url(${cardImg})` }}>
+            <div 
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+              style={{ backgroundImage: `url(${cardImg})` }}
+            >
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             </div>
             <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start">
@@ -168,7 +217,7 @@ export default function GolfCartBuilder() {
           </div>
         </div>
 
-        {/* Right */}
+        {/* Right - Options */}
         <div className="lg:w-[35%]">
           <div className="sticky top-24">
             {/* Model Selection */}
@@ -180,23 +229,31 @@ export default function GolfCartBuilder() {
                 <button
                   key={m.id}
                   onClick={() => setSelectedModel(m)}
+                  disabled={loading}
                   className={`
                     text-xs font-bold px-4 py-2 rounded-lg transition-all border
                     ${selectedModel?.id === m.id
                       ? 'bg-[#f9c821] text-white border-[#f9c821] shadow-lg shadow-[#f9c821]/20'
                       : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}
+                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}
                   `}
                 >
                   {m.name}
                 </button>
-              ))}
+              )) || (
+                <div className="flex gap-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-9 w-24 bg-gray-200 rounded-lg animate-pulse"></div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Categories */}
             {loading ? (
-              <p className="text-center text-gray-500">Loading options...</p>
+              <SkeletonLoader />
             ) : Object.keys(groupedProducts).length === 0 ? (
-              <p className="text-center text-gray-500">Select a model to see options</p>
+              <p className="text-center text-gray-500 py-12">Select a model to see customization options</p>
             ) : (
               <div className="space-y-4">
                 {Object.entries(groupedProducts).map(([categoryName, products], index) => (

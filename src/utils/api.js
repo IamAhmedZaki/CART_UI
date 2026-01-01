@@ -1,7 +1,9 @@
 // src/api/api.js
 
-const BASE_URL = "https://cart-backend-nine.vercel.app/api";
 // const BASE_URL = "http://localhost:5000/api";
+// export const IMAGE_URL = "http://localhost:5000";
+const BASE_URL = "https://cart-backend-s1wz.onrender.com/api";
+export const IMAGE_URL = "https://cart-backend-s1wz.onrender.com";
 
 /**
  * Generic request helper
