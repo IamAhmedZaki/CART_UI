@@ -25,23 +25,24 @@ async function request(endpoint, options = {}) {
   return response.json();
 }
 
-/**
- * HTTP methods
- */
 export const api = {
-  get: (endpoint) => request(endpoint),
-  post: (endpoint, body) =>
+  get: (endpoint, options) => request(endpoint, { ...options }),
+  post: (endpoint, body, options = {}) =>
     request(endpoint, {
       method: "POST",
       body: JSON.stringify(body),
+      ...options, // ✅ merge options so headers can be sent
     }),
-  put: (endpoint, body) =>
+  put: (endpoint, body, options = {}) =>
     request(endpoint, {
       method: "PUT",
       body: JSON.stringify(body),
+      ...options,
     }),
-  delete: (endpoint) =>
+  delete: (endpoint, options = {}) =>
     request(endpoint, {
       method: "DELETE",
+      ...options,
     }),
 };
+

@@ -14,31 +14,56 @@ export default function Checkout() {
     0
   );
 
-  const handleStripeCheckout = async () => {
+
+  
+ const handleStripeCheckout = async () => {
+  const token = localStorage.getItem("token"); // get token at the time of request
+
   try {
-    // Optional safety check (frontend)
+    // Optional stock check
     const outOfStock = carts.find(item => item.qty > item.stock);
     if (outOfStock) {
       alert(`${outOfStock.name} is out of stock`);
       return;
     }
 
-    const response = await api.post("/checkout/stripe-session", {
+    // Prepare body
+    const body = {
       items: carts.map(item => ({
         id: item.id,
         name: item.name,
         price: item.price,
         qty: item.qty,
       })),
+    };
+
+    // Make the POST request with fetch
+    const response = await fetch("https://cart-backend-s1wz.onrender.com/api/checkout/stripe-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",       // very important
+        "Authorization": `Bearer ${token}`,       // send JWT
+      },
+      body: JSON.stringify(body),
     });
 
-    const stripe = await stripePromise;
-    window.location.href = response.url; // Stripe Checkout redirect
-  } catch (error) {
-    console.error("Stripe error:", error);
-    alert("Unable to start payment");
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Stripe session request failed");
+    }
+
+    const data = await response.json();
+
+    // Redirect to Stripe checkout
+    window.location.href = data.url;
+
+  } catch (err) {
+    console.error("Stripe checkout failed:", err);
+    alert("Checkout failed: " + err.message);
   }
 };
+
+
 
 
   return (
