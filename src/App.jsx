@@ -17,6 +17,7 @@ import GolfCartBuilder from "./pages/GolfCartBuilder";
 import LoginPage from "./pages/Login";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import Profile from "./pages/Profile";
 
 export default function App() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="/clubpro" element={<ClubPro />} />
               <Route path="/brand/:brandSlug" element={<GolfCartBuilder />} />
               <Route path="/checkout" element={<Checkout />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
         </Routes>

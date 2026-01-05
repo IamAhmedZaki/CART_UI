@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import cardImg from "/assets/cpm_club_car.webp";
-import { api, IMAGE_URL } from "../utils/api";
+import { api} from "../utils/api";
 
 // Skeleton Loader Component
 const SkeletonLoader = () => (
@@ -59,7 +59,7 @@ export default function GolfCartBuilder() {
         setBrand(data);
 
         if (data.logo) {
-          setBrandLogo(`${IMAGE_URL}${data.logo}`);
+          setBrandLogo(`${data.logo}`);
         } else {
           setBrandLogo(null);
         }

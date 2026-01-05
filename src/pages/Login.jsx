@@ -25,7 +25,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://cart-backend-s1wz.onrender.com/api/customers/login", {
+      const res = await fetch("https://cart-backend-nine.vercel.app/api/customers/login", {
+      // const res = await fetch("http://localhost:5000/api/customers/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
