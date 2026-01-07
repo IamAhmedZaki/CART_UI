@@ -38,7 +38,10 @@ const DealerRegistration = () => {
     hasShowroom: "",
     interestedBrands: [],
     sellBrands: [],
+    sellBrandsOther: "",
     authorizedDealer: [],
+    authorizedDealersOther: "",
+    resaleCertificate: null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,24 +49,22 @@ const DealerRegistration = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const interestedBrandOptions = [
-    "Axles",
-    "Clutch Kits / Belts",
+    "Outfit My Fleet Lease Program",
     "Enclosures",
-    "Engine Parts",
-    "Lift Kits / Off-Road",
-    "Light Kits",
-    "Maintenance",
-    "Mirrors",
-    "Motors & Controllers",
-    "Portals/Suspension",
-    "Seat Kits",
-    "Snorkel Kits",
-    "Tires & Wheels",
-    "Tops / Windshields / Doors",
+    "Maintenance/Utility",
+    "Hard-good Accessories",
+    "Soft-good Accessories",
+    "Custom Orders",
     "Check All",
   ];
 
-  const sellBrandOptions = ["Club Car", "E-Z-GO", "Yamaha", "Other", "Check All"];
+  const sellBrandOptions = [
+    "Club Car",
+    "E-Z-GO",
+    "Yamaha",
+    "Check All",
+    "Other",
+  ];
 
   const authorizedDealerOptions = [
     "Polaris",
@@ -71,7 +72,10 @@ const DealerRegistration = () => {
     "Yamaha",
     "Honda",
     "Kawasaki",
-    "CF Moto",
+    "Cushman",
+    "Umax",
+    "Carry-All",
+    "Other",
     "Check All",
   ];
 
@@ -111,66 +115,51 @@ const DealerRegistration = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus(null);
-    setErrorMessage("");
+  e.preventDefault();
+  setIsSubmitting(true);
+  setSubmitStatus(null);
+  setErrorMessage("");
 
-    try {
-      const res = await fetch("https://cart-backend-nine.vercel.app/api/dealer-registration", {
-      // const res = await fetch("http://localhost:5000/api/dealer-registration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+  try {
+    const formDataObj = new FormData();
 
-      const result = await res.json();
-
-      if (res.ok) {
-        setSubmitStatus("success");
-
-        // Reset form
-        setFormData({
-          companyName: "",
-          title: "",
-          firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
-          mobile: "",
-          fax: "",
-          billingStreet: "",
-          billingCity: "",
-          billingState: "",
-          billingZip: "",
-          billingCountry: "",
-          commercialStreet: "",
-          commercialCity: "",
-          commercialState: "",
-          commercialZip: "",
-          commercialCountry: "",
-          hasShowroom: "",
-          interestedBrands: [],
-          sellBrands: [],
-          authorizedDealer: [],
-        });
-
-        // Redirect to login after 4 seconds
-        setTimeout(() => {
-          navigate("/login"); // Change this if your login route is different
-        }, 4000);
-      } else {
-        setSubmitStatus("error");
-        setErrorMessage(result.error || "Registration failed. Please try again.");
+    // append all fields
+    Object.keys(formData).forEach((key) => {
+      if (Array.isArray(formData[key])) {
+        formData[key].forEach((item) =>
+          formDataObj.append(`${key}[]`, item)
+        );
+      } else if (formData[key] !== null) {
+        formDataObj.append(key, formData[key]);
       }
-    } catch (err) {
-      console.error("Submission error:", err);
+    });
+
+    const res = await fetch(
+      "https://cart-backend-nine.vercel.app/api/dealer-registration",
+      // "http://localhost:5000/api/dealer-registration",
+      {
+        method: "POST",
+        body: formDataObj, // ✅ FormData
+      }
+    );
+
+    const result = await res.json();
+
+    if (res.ok) {
+      setSubmitStatus("success");
+      setTimeout(() => navigate("/login"), 4000);
+    } else {
       setSubmitStatus("error");
-      setErrorMessage("Network error. Please check your connection and try again.");
-    } finally {
-      setIsSubmitting(false);
+      setErrorMessage(result.error || "Registration failed");
     }
-  };
+  } catch (err) {
+    setSubmitStatus("error");
+    setErrorMessage("Network error");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   // Hero image slideshow
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -180,6 +169,31 @@ const DealerRegistration = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleFileChange = (e) => {
+    setFormData({
+      ...formData,
+      resaleCertificate: e.target.files[0],
+    });
+  };
+  const handleSellTextChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      sellBrandsOther: e.target.value,
+    }));
+
+        console.log(formData);
+
+  };
+  const handleAuthorizedTextChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      authorizedDealersOther: e.target.value,
+    }));
+
+    console.log(formData);
+    
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -271,7 +285,9 @@ const DealerRegistration = () => {
                   </p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-2">Product Distribution</h3>
+                  <h3 className="font-bold text-lg mb-2">
+                    Product Distribution
+                  </h3>
                   <p className="text-sm">
                     At Club Pro, we have carefully managed logistics, streamline
                     products to speed up the time of delivery out of door
@@ -347,13 +363,10 @@ const DealerRegistration = () => {
                   animate={{ opacity: 1 }}
                   className="bg-white rounded-lg shadow-md p-8"
                 >
-                  <h2 className="text-3xl font-bold mb-2">Dealer Registration</h2>
-                  <p className="text-gray-600 mb-6">
-                    Not a licensed?{" "}
-                    <a href="#" className="text-blue-600 hover:underline">
-                      Find a dealer near you →
-                    </a>
-                  </p>
+                  <h2 className="text-3xl font-bold mb-2">
+                    Dealer Registration
+                  </h2>
+
                   <p className="text-sm text-gray-700 mb-8">
                     Fill out the form below and one of our customer service
                     representatives will contact you within one business day to
@@ -376,7 +389,9 @@ const DealerRegistration = () => {
 
                   <form onSubmit={handleSubmit}>
                     {/* Company Information */}
-                    <h3 className="text-xl font-bold mb-4">Company Information</h3>
+                    <h3 className="text-xl font-bold mb-4">
+                      Company Information
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium mb-1">
@@ -393,7 +408,9 @@ const DealerRegistration = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Title</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Title
+                        </label>
                         <input
                           type="text"
                           name="title"
@@ -406,7 +423,9 @@ const DealerRegistration = () => {
                       <div></div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Name*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Name*
+                        </label>
                         <input
                           type="text"
                           name="firstName"
@@ -431,7 +450,9 @@ const DealerRegistration = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Email*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Email*
+                        </label>
                         <input
                           type="email"
                           name="email"
@@ -443,7 +464,9 @@ const DealerRegistration = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Phone*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Phone*
+                        </label>
                         <input
                           type="tel"
                           name="phone"
@@ -455,7 +478,9 @@ const DealerRegistration = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Mobile</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Mobile
+                        </label>
                         <input
                           type="tel"
                           name="mobile"
@@ -466,7 +491,9 @@ const DealerRegistration = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Fax</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Fax
+                        </label>
                         <input
                           type="tel"
                           name="fax"
@@ -481,7 +508,9 @@ const DealerRegistration = () => {
                     <h3 className="text-xl font-bold mb-4">Billing Address</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium mb-1">Street*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Street*
+                        </label>
                         <input
                           type="text"
                           name="billingStreet"
@@ -492,7 +521,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">City*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          City*
+                        </label>
                         <input
                           type="text"
                           name="billingCity"
@@ -503,7 +534,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">State / Province*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          State / Province*
+                        </label>
                         <input
                           type="text"
                           name="billingState"
@@ -514,7 +547,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Postal / Zip Code*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Postal / Zip Code*
+                        </label>
                         <input
                           type="text"
                           name="billingZip"
@@ -525,7 +560,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Country*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Country*
+                        </label>
                         <select
                           name="billingCountry"
                           value={formData.billingCountry}
@@ -547,7 +584,9 @@ const DealerRegistration = () => {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium mb-1">Street*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Street*
+                        </label>
                         <input
                           type="text"
                           name="commercialStreet"
@@ -558,7 +597,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">City*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          City*
+                        </label>
                         <input
                           type="text"
                           name="commercialCity"
@@ -569,7 +610,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">State / Province*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          State / Province*
+                        </label>
                         <input
                           type="text"
                           name="commercialState"
@@ -580,7 +623,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Postal / Zip Code*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Postal / Zip Code*
+                        </label>
                         <input
                           type="text"
                           name="commercialZip"
@@ -591,7 +636,9 @@ const DealerRegistration = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Country*</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Country*
+                        </label>
                         <select
                           name="commercialCountry"
                           value={formData.commercialCountry}
@@ -608,43 +655,70 @@ const DealerRegistration = () => {
                     </div>
 
                     {/* Questionnaire */}
-                    <h3 className="text-xl font-bold mb-4">Short Questionnaire</h3>
+                    <h3 className="text-xl font-bold mb-4">
+                      Short Questionnaire
+                    </h3>
 
                     <div className="mb-6">
                       <label className="block text-sm font-medium mb-2">
-                        Do you have a showroom?*
+                        Do you have a Resale Certificate?*
                       </label>
-                      <div className="flex gap-4">
-                        <label className="flex items-center">
-                          <input
-                            type="radio"
-                            name="hasShowroom"
-                            value="yes"
-                            checked={formData.hasShowroom === "yes"}
-                            onChange={handleOtherChange}
-                            required
-                            className="mr-2"
-                          />
-                          Yes
-                        </label>
-                        <label className="flex items-center">
-                          <input
-                            type="radio"
-                            name="hasShowroom"
-                            value="no"
-                            checked={formData.hasShowroom === "no"}
-                            onChange={handleOtherChange}
-                            required
-                            className="mr-2"
-                          />
-                          No
-                        </label>
+
+                      <div className="flex items-center gap-6">
+                        {/* Radio buttons */}
+                        <div className="flex gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="hasShowroom"
+                              value="yes"
+                              checked={formData.hasShowroom === "yes"}
+                              onChange={handleOtherChange}
+                              required
+                              className="mr-2"
+                            />
+                            Yes
+                          </label>
+
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="hasShowroom"
+                              value="no"
+                              checked={formData.hasShowroom === "no"}
+                              onChange={handleOtherChange}
+                              required
+                              className="mr-2"
+                            />
+                            No
+                          </label>
+                        </div>
+
+                        {/* File upload (only if Yes) */}
+                        {formData.hasShowroom === "yes" && (
+                          <div>
+                            <input
+                              type="file"
+                              name="resaleCertificate"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={handleFileChange}
+                              className="block text-sm text-gray-600
+                     file:mr-4 file:py-2 file:px-4
+                     file:rounded file:border-0
+                     file:text-sm file:font-medium
+                     file:bg-blue-50 file:text-blue-700
+                     hover:file:bg-blue-100"
+                              required
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <div className="mb-6">
                       <label className="block text-sm font-medium mb-2">
-                        Which product categories are you most interested in? (Select all that apply)
+                        Which product categories are you most interested in?
+                        (Select all that apply)
                       </label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {interestedBrandOptions.map((brand) => {
@@ -653,13 +727,17 @@ const DealerRegistration = () => {
                             (item) => item !== "Check All"
                           );
                           const allSelected =
-                            formData.interestedBrands.length === cleanOptions.length;
+                            formData.interestedBrands.length ===
+                            cleanOptions.length;
                           const isChecked = isCheckAll
                             ? allSelected
                             : formData.interestedBrands.includes(brand);
 
                           return (
-                            <label key={brand} className="flex items-center text-sm">
+                            <label
+                              key={brand}
+                              className="flex items-center text-sm"
+                            >
                               <input
                                 type="checkbox"
                                 value={brand}
@@ -676,31 +754,51 @@ const DealerRegistration = () => {
 
                     <div className="mb-6">
                       <label className="block text-sm font-medium mb-2">
-                        Are you an authorized dealer for any of the following PTV brands? (Select all that apply)
+                        Are you an authorized purchaser for any of the following
+                        PTV brands? (Select all that apply)
                       </label>
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {sellBrandOptions.map((brand) => {
                           const isCheckAll = brand === "Check All";
+                          const isOther = brand === "Other";
+
                           const cleanOptions = sellBrandOptions.filter(
                             (item) => item !== "Check All"
                           );
+
                           const allSelected =
                             formData.sellBrands.length === cleanOptions.length;
+
                           const isChecked = isCheckAll
                             ? allSelected
                             : formData.sellBrands.includes(brand);
 
                           return (
-                            <label key={brand} className="flex items-center text-sm">
-                              <input
-                                type="checkbox"
-                                value={brand}
-                                name="sellBrands"
-                                checked={isChecked}
-                                onChange={handleChange}
-                              />
-                              <span className="ml-2">{brand}</span>
-                            </label>
+                            <div key={brand} className="flex flex-col">
+                              <label className="flex items-center text-sm">
+                                <input
+                                  type="checkbox"
+                                  value={brand}
+                                  name="sellBrands"
+                                  checked={isChecked}
+                                  onChange={handleChange}
+                                />
+                                <span className="ml-2">{brand}</span>
+                              </label>
+
+                              {/* Show textbox ONLY if Other is checked */}
+                              {isOther &&
+                                formData.sellBrands.includes("Other") && (
+                                  <input
+                                    type="text"
+                                    placeholder="Please specify"
+                                    className="mt-2 border rounded px-2 py-1 text-sm"
+                                    value={formData.sellBrandsOther}
+                                    onChange={handleSellTextChange}
+                                  />
+                                )}
+                            </div>
                           );
                         })}
                       </div>
@@ -708,22 +806,29 @@ const DealerRegistration = () => {
 
                     <div className="mb-6">
                       <label className="block text-sm font-medium mb-2">
-                        Are you an authorized dealer for any of the following UTV brands? (Select all that apply)
+                        Are you an authorized purchaser for any of the following
+                        UTV brands? (Select all that apply)
                       </label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {authorizedDealerOptions.map((brand) => {
                           const isCheckAll = brand === "Check All";
+                          const isOther = brand === "Other";
                           const cleanOptions = authorizedDealerOptions.filter(
                             (item) => item !== "Check All"
                           );
                           const allSelected =
-                            formData.authorizedDealer.length === cleanOptions.length;
+                            formData.authorizedDealer.length ===
+                            cleanOptions.length;
                           const isChecked = isCheckAll
                             ? allSelected
                             : formData.authorizedDealer.includes(brand);
 
                           return (
-                            <label key={brand} className="flex items-center text-sm">
+                            <>
+                            <label
+                              key={brand}
+                              className="flex items-center text-sm"
+                            >
                               <input
                                 type="checkbox"
                                 value={brand}
@@ -733,6 +838,17 @@ const DealerRegistration = () => {
                               />
                               <span className="ml-2">{brand}</span>
                             </label>
+                            {isOther &&
+                                formData.authorizedDealer.includes("Other") && (
+                                  <input
+                                    type="text"
+                                    placeholder="Please specify"
+                                    className="mt-2 border rounded px-2 py-1 text-sm"
+                                    value={formData.authorizedDealersOther}
+                                    onChange={handleAuthorizedTextChange}
+                                  />
+                                )}
+                                </>
                           );
                         })}
                       </div>

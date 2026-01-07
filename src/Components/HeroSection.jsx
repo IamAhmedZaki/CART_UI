@@ -55,19 +55,25 @@ export default function HeroSection() {
               Premium Golf Accessories
             </span>
             <h1 className="text-[#f9c821] text-5xl md:text-7xl font-serif font-bold leading-tight drop-shadow-lg">
-              Custom Golf Cart Accessories <br />
+              Club Pro Green Grass <br />
               <span className="text-white text-4xl">Build Your EZ-GO, Club Car & Yamaha.</span>
             </h1>
           </motion.div>
 
           <motion.p
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-200 font-light max-w-lg leading-relaxed"
-          >
-            The most trusted golf car accessories since 1989. Experience quality, durability, and style.
-          </motion.p>
+  initial={{ opacity: 0, x: -50 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.8, delay: 0.4 }}
+  className="text-lg md:text-xl text-gray-200 font-light max-w-lg leading-relaxed"
+>
+  We’re currently enhancing the Club Pro GreenGrass online experience to bring you a smoother, more powerful way to build and customize your products. During this development period, you may encounter occasional issues in the Build or Checkout process.<br /><br />
+
+  If you experience any technical difficulties, our Customer Service team is ready to assist and ensure your order is completed without interruption.<br /><br />
+
+  Thank you for choosing Club Pro GreenGrass — we appreciate your patience as we continue to elevate your experience.
+</motion.p>
+
+
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

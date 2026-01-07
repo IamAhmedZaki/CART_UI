@@ -154,7 +154,7 @@ export default function Profile() {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
-    //   "http://localhost:5000/api/profile-password",
+      // "http://localhost:5000/api/profile-password",
       "https://cart-backend-nine.vercel.app/api/profile-password",
       {
         method: "PUT",

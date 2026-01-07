@@ -1,17 +1,20 @@
 import { useParams } from "react-router-dom";
-import React, { useState, useEffect } from 'react';
-import { Bookmark, Plus, Minus, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useCart } from '../context/CartContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from "react";
+import { Bookmark, Plus, Minus, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "../context/CartContext";
+import { useNavigate } from "react-router-dom";
 import cardImg from "/assets/cpm_club_car.webp";
-import { api} from "../utils/api";
+import { api } from "../utils/api";
 
 // Skeleton Loader Component
 const SkeletonLoader = () => (
   <div className="space-y-4 animate-pulse">
     {[1, 2, 3].map((i) => (
-      <div key={i} className="rounded-xl overflow-hidden border border-gray-300 bg-white shadow-md">
+      <div
+        key={i}
+        className="rounded-xl overflow-hidden border border-gray-300 bg-white shadow-md"
+      >
         <div className="w-full flex justify-between items-center px-6 py-5 bg-gray-100">
           <div className="h-4 bg-gray-300 rounded w-32"></div>
           <div className="h-5 w-5 bg-gray-300 rounded-full"></div>
@@ -29,7 +32,9 @@ const PageLoader = () => (
         <div className="w-20 h-20 border-4 border-gray-200 rounded-full"></div>
         <div className="absolute top-0 left-0 w-20 h-20 border-4 border-[#f9c821] rounded-full border-t-transparent animate-spin"></div>
       </div>
-      <p className="mt-6 text-lg text-gray-600 font-medium">Loading your golf cart builder...</p>
+      <p className="mt-6 text-lg text-gray-600 font-medium">
+        Loading your golf cart builder...
+      </p>
     </div>
   </div>
 );
@@ -41,6 +46,7 @@ export default function GolfCartBuilder() {
   const [groupedProducts, setGroupedProducts] = useState({});
   const [loading, setLoading] = useState(true); // Start as true for initial load
   const [brandLogo, setBrandLogo] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const { addItem } = useCart();
   const navigate = useNavigate();
@@ -51,11 +57,11 @@ export default function GolfCartBuilder() {
   // Fetch brand and default model
   useEffect(() => {
     const fetchBrand = async () => {
-      setGroupedProducts({})
+      setGroupedProducts({});
       setLoading(true); // Ensure loading state is active
       try {
         const data = await api.get(`/brands/slug/${brandSlug}`);
-        
+
         setBrand(data);
 
         if (data.logo) {
@@ -87,22 +93,23 @@ export default function GolfCartBuilder() {
 
     setLoading(true); // Show loader when switching models
 
-    api.get(`/models/${selectedModel.id}`)
+    api
+      .get(`/models/${selectedModel.id}`)
       .then((modelData) => {
         const grouped = modelData.products.reduce((acc, product) => {
           const typeName = product.productType.name;
           if (!acc[typeName]) acc[typeName] = [];
-          acc[typeName].push({ 
-            ...product, 
-            price: parseFloat(product.salePrice || product.regularPrice) 
+          acc[typeName].push({
+            ...product,
+            price: parseFloat(product.salePrice || product.regularPrice),
           });
           return acc;
         }, {});
 
         setGroupedProducts(grouped);
-        setSelections({ 
-          model: { name: selectedModel.name, price: selectedModel.price || 0 }, 
-          items: {} 
+        setSelections({
+          model: { name: selectedModel.name, price: selectedModel.price || 0 },
+          items: {},
         });
 
         const firstCategory = Object.keys(grouped)[0];
@@ -112,30 +119,72 @@ export default function GolfCartBuilder() {
       .finally(() => setLoading(false));
   }, [selectedModel]);
 
+  const allImages = useMemo(() => {
+  const images = [];
+
+  // Go through all selected items
+  Object.values(selections.items).forEach(item => {
+    if (!item) return;
+
+    // Handle both single select and multi-select (array)
+    const products = Array.isArray(item) ? item : [item];
+
+    products.forEach(product => {
+      if (product.imageOne) images.push(product.imageOne);
+      if (product.imageTwo) images.push(product.imageTwo);
+      if (product.imageThree) images.push(product.imageThree);
+      if (product.imageFour) images.push(product.imageFour);
+    });
+  });
+
+  // Remove nulls and duplicates
+  return [...new Set(images.filter(Boolean))];
+}, [selections.items]);
+
+const currentImage = allImages[currentIndex];
+
+// Navigation functions
+const goToPrev = () => {
+  setCurrentIndex(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
+};
+
+const goToNext = () => {
+  setCurrentIndex(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
+};
+
+// Reset carousel when selections change significantly
+useEffect(() => {
+  setCurrentIndex(0);
+}, [allImages.length]);
   // ... rest of your helpers remain unchanged
-  const isMultiSelectCategory = (category) => !["Enclosure", "Color"].includes(category);
-  const getSelectedForCategory = (category) => selections.items[category] || (isMultiSelectCategory(category) ? [] : null);
-  const isSelected = (category, product) => isMultiSelectCategory(category)
-    ? (selections.items[category] || []).some(p => p.id === product.id)
-    : selections.items[category]?.id === product.id;
+  const isMultiSelectCategory = (category) =>
+    !["Enclosure", "Color"].includes(category);
+  const getSelectedForCategory = (category) =>
+    selections.items[category] || (isMultiSelectCategory(category) ? [] : null);
+  const isSelected = (category, product) =>
+    isMultiSelectCategory(category)
+      ? (selections.items[category] || []).some((p) => p.id === product.id)
+      : selections.items[category]?.id === product.id;
 
   const handleSelect = (category, product) => {
     if (product.stock === 0) return;
 
     if (isMultiSelectCategory(category)) {
-      setSelections(prev => {
+      setSelections((prev) => {
         const current = prev.items[category] || [];
-        const exists = current.find(p => p.id === product.id);
+        const exists = current.find((p) => p.id === product.id);
         return {
           ...prev,
           items: {
             ...prev.items,
-            [category]: exists ? current.filter(p => p.id !== product.id) : [...current, product],
+            [category]: exists
+              ? current.filter((p) => p.id !== product.id)
+              : [...current, product],
           },
         };
       });
     } else {
-      setSelections(prev => ({
+      setSelections((prev) => ({
         ...prev,
         items: {
           ...prev.items,
@@ -147,10 +196,10 @@ export default function GolfCartBuilder() {
 
   const handleSaveBuild = () => {
     const selectedProducts = [];
-    Object.values(selections.items).forEach(selected => {
+    Object.values(selections.items).forEach((selected) => {
       if (!selected) return;
       if (Array.isArray(selected)) {
-        selected.forEach(item => selectedProducts.push({ ...item, qty: 1 }));
+        selected.forEach((item) => selectedProducts.push({ ...item, qty: 1 }));
       } else {
         selectedProducts.push({ ...selected, qty: 1 });
       }
@@ -161,7 +210,9 @@ export default function GolfCartBuilder() {
 
   const totalPrice = (
     (selections.model?.price || 0) +
-    Object.values(selections.items).flat().reduce((sum, item) => sum + (item?.price || 0), 0)
+    Object.values(selections.items)
+      .flat()
+      .reduce((sum, item) => sum + (item?.price || 0), 0)
   ).toFixed(2);
 
   // Show full page loader until brand is loaded
@@ -174,7 +225,8 @@ export default function GolfCartBuilder() {
       {/* Header */}
       <div className="container mx-auto px-6 mb-8">
         <div className="flex items-center gap-4 text-xs md:text-sm tracking-widest text-gray-500 mb-2">
-          <span className="text-[#f9c821]">HOME</span> / {brand?.name?.toUpperCase() || "LOADING..."}
+          <span className="text-[#f9c821]">HOME</span> /{" "}
+          {brand?.name?.toUpperCase() || "LOADING..."}
         </div>
         <h1 className="flex items-center justify-between text-3xl md:text-5xl font-serif font-bold">
           <div className="flex items-center gap-2">
@@ -182,7 +234,11 @@ export default function GolfCartBuilder() {
             <span className="text-[#f9c821]">{brand?.name || "..."}</span>
           </div>
           {brandLogo ? (
-            <img src={brandLogo} alt={`${brand?.name} Logo`} className="h-6 md:h-10 object-contain" />
+            <img
+              src={brandLogo}
+              alt={`${brand?.name} Logo`}
+              className="h-6 md:h-10 object-contain"
+            />
           ) : (
             <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
           )}
@@ -193,26 +249,92 @@ export default function GolfCartBuilder() {
         {/* Left - Image */}
         <div className="lg:w-[65%]">
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 h-[400px] lg:h-[700px] group">
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              style={{ backgroundImage: `url(${cardImg})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            </div>
-            <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start">
-              <span className="bg-[#f9c821]/90 text-white px-4 py-3 rounded-full text-xs font-bold tracking-widest">
-                PREMIUM SERIES
+            {/* Dynamic Background Image */}
+           <div
+  className="absolute inset-0 bg-center bg-no-repeat transition-all duration-1000 ease-out"
+  style={{
+    backgroundImage: `url(https://ecou1bc3kziqxgke.public.blob.vercel-storage.com/products/${
+      currentImage || "placeholder.jpg"
+    })`,
+    backgroundSize: "80%", // Zoomed out slightly
+    backgroundPosition: "center",
+  }}
+  role="img"
+  aria-label="Selected golf cart configuration preview"
+>
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+</div>
+
+
+            {/* Navigation Buttons - Only show if multiple images */}
+            {allImages.length > 1 && (
+              <>
+                <button
+                  onClick={goToPrev}
+                  disabled={currentIndex === 0}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 backdrop-blur-sm rounded-full p-3 shadow-lg 
+                     hover:bg-white hover:scale-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+
+                <button
+                  onClick={goToNext}
+                  disabled={currentIndex === allImages.length - 1}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 backdrop-blur-sm rounded-full p-3 shadow-lg 
+                     hover:bg-white hover:scale-110 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Image Indicators (Dots) */}
+            {allImages.length > 1 && (
+              <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                {allImages.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      idx === currentIndex
+                        ? "bg-white w-8"
+                        : "bg-white/50 hover:bg-white/80"
+                    }`}
+                    aria-label={`Go to image ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Top Bar */}
+            <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-10">
+              <span className="bg-[#f9c821] text-black px-5 py-3 rounded-full text-xs font-extrabold tracking-wider shadow-md uppercase">
+                Premium Series
               </span>
+
               <button
                 onClick={handleSaveBuild}
-                className="bg-white/90 backdrop-blur-md border border-gray-300 px-6 py-3 rounded-full shadow-lg text-xs font-bold tracking-widest flex items-center gap-2 hover:bg-[#f9c821] hover:text-white transition-all"
+                className="bg-white/95 backdrop-blur-sm border border-gray-200 px-6 py-3 rounded-full shadow-xl text-xs font-bold tracking-wider flex items-center gap-2 
+                   hover:bg-[#f9c821] hover:text-black hover:border-[#f9c821] 
+                   transition-all duration-300 transform hover:-translate-y-0.5"
+                aria-label="Save this build"
               >
-                SAVE BUILD <Bookmark className="w-4 h-4" />
+                <Bookmark className="w-4 h-4" />
+                Save Build
               </button>
             </div>
-            <div className="absolute bottom-8 left-8 text-white">
-              <p className="text-2xl font-bold">{selectedModel?.name || "Select Model"}</p>
-              <p className="text-4xl font-serif">${totalPrice}</p>
+
+            {/* Bottom Content */}
+            <div className="absolute bottom-8 left-8 text-white z-10">
+              <p className="text-2xl lg:text-4xl font-bold tracking-tight mb-2">
+                {selectedModel?.name || "Select a Model"}
+              </p>
+              <p className="text-4xl lg:text-6xl font-serif tracking-tight">
+                ${totalPrice?.toLocaleString() || "0"}
+              </p>
             </div>
           </div>
         </div>
@@ -232,18 +354,23 @@ export default function GolfCartBuilder() {
                   disabled={loading}
                   className={`
                     text-xs font-bold px-4 py-2 rounded-lg transition-all border
-                    ${selectedModel?.id === m.id
-                      ? 'bg-[#f9c821] text-white border-[#f9c821] shadow-lg shadow-[#f9c821]/20'
-                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}
-                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+                    ${
+                      selectedModel?.id === m.id
+                        ? "bg-[#f9c821] text-white border-[#f9c821] shadow-lg shadow-[#f9c821]/20"
+                        : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                    }
+                    ${loading ? "opacity-50 cursor-not-allowed" : ""}
                   `}
                 >
                   {m.name}
                 </button>
               )) || (
                 <div className="flex gap-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-9 w-24 bg-gray-200 rounded-lg animate-pulse"></div>
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-9 w-24 bg-gray-200 rounded-lg animate-pulse"
+                    ></div>
                   ))}
                 </div>
               )}
@@ -253,70 +380,110 @@ export default function GolfCartBuilder() {
             {loading ? (
               <SkeletonLoader />
             ) : Object.keys(groupedProducts).length === 0 ? (
-              <p className="text-center text-gray-500 py-12">Select a model to see customization options</p>
+              <p className="text-center text-gray-500 py-12">
+                Select a model to see customization options
+              </p>
             ) : (
               <div className="space-y-4">
-                {Object.entries(groupedProducts).map(([categoryName, products], index) => (
-                  <motion.div
-                    key={categoryName}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 * index }}
-                    className="rounded-xl overflow-hidden border border-gray-300 bg-white shadow-md"
-                  >
-                    <button
-                      onClick={() => setOpenSection(openSection === categoryName ? null : categoryName)}
-                      className={`w-full flex justify-between items-center px-6 py-5 transition-all hover:bg-gray-50 ${openSection === categoryName ? 'bg-gray-50' : ''}`}
+                {Object.entries(groupedProducts).map(
+                  ([categoryName, products], index) => (
+                    <motion.div
+                      key={categoryName}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      className="rounded-xl overflow-hidden border border-gray-300 bg-white shadow-md"
                     >
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">
-                        {categoryName}
-                      </span>
-                      {openSection === categoryName ? <Minus className="w-4 h-4 text-[#f9c821]" /> : <Plus className="w-4 h-4 text-gray-500" />}
-                    </button>
+                      <button
+                        onClick={() =>
+                          setOpenSection(
+                            openSection === categoryName ? null : categoryName
+                          )
+                        }
+                        className={`w-full flex justify-between items-center px-6 py-5 transition-all hover:bg-gray-50 ${
+                          openSection === categoryName ? "bg-gray-50" : ""
+                        }`}
+                      >
+                        <span className="text-xs font-bold uppercase tracking-widest text-gray-700">
+                          {categoryName}
+                        </span>
+                        {openSection === categoryName ? (
+                          <Minus className="w-4 h-4 text-[#f9c821]" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-gray-500" />
+                        )}
+                      </button>
 
-                    <AnimatePresence>
-                      {openSection === categoryName && (
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: "auto" }}
-                          exit={{ height: 0 }}
-                          className="overflow-hidden bg-gray-50"
-                        >
-                          <div className="p-6 space-y-3">
-                            {products.map((product) => {
-                              const active = isSelected(categoryName, product);
-                              const isOutOfStock = product.stock === 0;
+                      <AnimatePresence>
+                        {openSection === categoryName && (
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: "auto" }}
+                            exit={{ height: 0 }}
+                            className="overflow-hidden bg-gray-50"
+                          >
+                            <div className="p-6 space-y-3">
+                              {products.map((product) => {
+                                const active = isSelected(
+                                  categoryName,
+                                  product
+                                );
+                                const isOutOfStock = product.stock === 0;
 
-                              return (
-                                <div
-                                  key={product.id}
-                                  onClick={() => !isOutOfStock && handleSelect(categoryName, product)}
-                                  className={`
+                                return (
+                                  <div
+                                    key={product.id}
+                                    onClick={() =>
+                                      !isOutOfStock &&
+                                      handleSelect(categoryName, product)
+                                    }
+                                    className={`
                                     flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all border
-                                    ${active
-                                      ? 'bg-[#f9c821]/10 border-[#f9c821] text-[#f9c821]'
-                                      : 'bg-white border-gray-200 hover:bg-gray-100'}
-                                    ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}
+                                    ${
+                                      active
+                                        ? "bg-[#f9c821]/10 border-[#f9c821] text-[#f9c821]"
+                                        : "bg-white border-gray-200 hover:bg-gray-100"
+                                    }
+                                    ${
+                                      isOutOfStock
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : ""
+                                    }
                                   `}
-                                >
-                                  <div>
-                                    <span className="text-sm font-medium">{product.name}</span>
-                                    {product.color && <span className="block text-xs text-gray-500">{product.color}</span>}
-                                    {isOutOfStock && <span className="block text-xs text-red-600">Out of stock</span>}
+                                  >
+                                    <div>
+                                      <span className="text-sm font-medium">
+                                        {product.name}
+                                      </span>
+                                      {product.color && (
+                                        <span className="block text-xs text-gray-500">
+                                          {product.color}
+                                        </span>
+                                      )}
+                                      {isOutOfStock && (
+                                        <span className="block text-xs text-red-600">
+                                          Out of stock
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm font-bold">
+                                        ${product.price.toFixed(2)}
+                                      </span>
+                                      {active && (
+                                        <ArrowRight className="w-5 h-5 text-[#f9c821]" />
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-sm font-bold">${product.price.toFixed(2)}</span>
-                                    {active && <ArrowRight className="w-5 h-5 text-[#f9c821]" />}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                ))}
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  )
+                )}
               </div>
             )}
           </div>
