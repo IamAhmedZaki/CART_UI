@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import React, { useState, useEffect, useMemo } from "react";
-import { Bookmark, Plus, Minus, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bookmark, Plus, Minus, ArrowRight, ChevronLeft, ChevronRight, BookmarkPlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
@@ -138,7 +138,8 @@ export default function GolfCartBuilder() {
   });
 
   // Remove nulls and duplicates
-  return [...new Set(images.filter(Boolean))];
+  return images.filter(Boolean).toReversed();;
+
 }, [selections.items]);
 
 const currentImage = allImages[currentIndex];
@@ -146,10 +147,13 @@ const currentImage = allImages[currentIndex];
 // Navigation functions
 const goToPrev = () => {
   setCurrentIndex(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
+  console.log(currentImage);
+  
 };
 
 const goToNext = () => {
   setCurrentIndex(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
+  console.log(currentImage);
 };
 
 // Reset carousel when selections change significantly
@@ -167,7 +171,7 @@ useEffect(() => {
       : selections.items[category]?.id === product.id;
 
   const handleSelect = (category, product) => {
-    if (product.stock === 0) return;
+    // if (product.stock === 0) return;
 
     if (isMultiSelectCategory(category)) {
       setSelections((prev) => {
@@ -192,10 +196,21 @@ useEffect(() => {
         },
       }));
     }
+
+    console.log(currentImage);
+    
   };
 
   const handleSaveBuild = () => {
-    const selectedProducts = [];
+   
+    
+    addItem(selectedProducts);
+    navigate("/checkout");
+  };
+  
+  
+  const handleSaveBuildLater = () => {
+     const selectedProducts = [];
     Object.values(selections.items).forEach((selected) => {
       if (!selected) return;
       if (Array.isArray(selected)) {
@@ -204,8 +219,8 @@ useEffect(() => {
         selectedProducts.push({ ...selected, qty: 1 });
       }
     });
-    addItem(selectedProducts);
-    navigate("/checkout");
+
+    console.log(selectedProducts);
   };
 
   const totalPrice = (
@@ -233,6 +248,7 @@ useEffect(() => {
             <span className="text-gray-900">Build Your</span>
             <span className="text-[#f9c821]">{brand?.name || "..."}</span>
           </div>
+            
           {brandLogo ? (
             <img
               src={brandLogo}
@@ -243,6 +259,7 @@ useEffect(() => {
             <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
           )}
         </h1>
+        <span className="text-gray-900 text-md mt-5">Note: Click the arrows to navigate through the images.</span>
       </div>
 
       <div className="container mx-auto px-6 flex flex-col lg:flex-row gap-8 lg:gap-12">
@@ -251,9 +268,9 @@ useEffect(() => {
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-200 h-[400px] lg:h-[700px] group">
             {/* Dynamic Background Image */}
            <div
-  className="absolute inset-0 bg-center bg-no-repeat transition-all duration-1000 ease-out"
+  className="absolute inset-0 bg-center bg-no-repeat"
   style={{
-    backgroundImage: `url(https://ecou1bc3kziqxgke.public.blob.vercel-storage.com/products/${
+    backgroundImage:  `url(https://ecou1bc3kziqxgke.public.blob.vercel-storage.com/products/${
       currentImage || "placeholder.jpg"
     })`,
     backgroundSize: "80%", // Zoomed out slightly
@@ -262,7 +279,7 @@ useEffect(() => {
   role="img"
   aria-label="Selected golf cart configuration preview"
 >
-  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+  {/* <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" /> */}
 </div>
 
 
@@ -293,15 +310,15 @@ useEffect(() => {
 
             {/* Image Indicators (Dots) */}
             {allImages.length > 1 && (
-              <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                 {allImages.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentIndex(idx)}
                     className={`w-2 h-2 rounded-full transition-all ${
                       idx === currentIndex
-                        ? "bg-white w-8"
-                        : "bg-white/50 hover:bg-white/80"
+                        ? "bg-black w-8"
+                        : "bg-black/50 hover:bg-black/80"
                     }`}
                     aria-label={`Go to image ${idx + 1}`}
                   />
@@ -315,6 +332,9 @@ useEffect(() => {
                 Premium Series
               </span>
 
+
+              <div className="flex gap-2">
+
               <button
                 onClick={handleSaveBuild}
                 className="bg-white/95 backdrop-blur-sm border border-gray-200 px-6 py-3 rounded-full shadow-xl text-xs font-bold tracking-wider flex items-center gap-2 
@@ -322,13 +342,29 @@ useEffect(() => {
                    transition-all duration-300 transform hover:-translate-y-0.5"
                 aria-label="Save this build"
               >
+                
                 <Bookmark className="w-4 h-4" />
+                
                 Save Build
               </button>
+              <button
+                onClick={handleSaveBuildLater}
+                className="bg-white/95 backdrop-blur-sm border border-gray-200 px-6 py-3 rounded-full shadow-xl text-xs font-bold tracking-wider flex items-center gap-2 
+                   hover:bg-[#f9c821] hover:text-black hover:border-[#f9c821] 
+                   transition-all duration-300 transform hover:-translate-y-0.5"
+                aria-label="Save this build"
+              >
+                
+                <BookmarkPlus className="w-4 h-4" />
+                Save Build For Later
+              </button>
+
+
+              </div>
             </div>
 
             {/* Bottom Content */}
-            <div className="absolute bottom-8 left-8 text-white z-10">
+            <div className="absolute bottom-8 left-8 text-black z-10">
               <p className="text-2xl lg:text-4xl font-bold tracking-tight mb-2">
                 {selectedModel?.name || "Select a Model"}
               </p>
@@ -434,7 +470,7 @@ useEffect(() => {
                                   <div
                                     key={product.id}
                                     onClick={() =>
-                                      !isOutOfStock &&
+                                     
                                       handleSelect(categoryName, product)
                                     }
                                     className={`
@@ -444,11 +480,7 @@ useEffect(() => {
                                         ? "bg-[#f9c821]/10 border-[#f9c821] text-[#f9c821]"
                                         : "bg-white border-gray-200 hover:bg-gray-100"
                                     }
-                                    ${
-                                      isOutOfStock
-                                        ? "opacity-50 cursor-not-allowed"
-                                        : ""
-                                    }
+                                   
                                   `}
                                   >
                                     <div>

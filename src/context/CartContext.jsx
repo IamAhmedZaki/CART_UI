@@ -18,7 +18,8 @@ export const CartProvider = ({ children }) => {
           updated.push({ ...item }); // add new item
         }
       });
-
+      console.log(updated);
+      
       return updated;
     });
   };

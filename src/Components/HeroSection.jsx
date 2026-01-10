@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import hero1 from "/assets/hero1.webp";
 import hero2 from "/assets/hero2.webp";
 import hero3 from "/assets/hero3.webp";
+import { ChevronRight } from "lucide-react";
 
 const images = [hero1, hero2, hero3];
 
@@ -54,8 +55,8 @@ export default function HeroSection() {
             <span className="inline-block py-2 px-3 border border-[#f9c821]/50 rounded-full text-[#f9c821] text-xs font-bold tracking-[0.2em] uppercase mb-4 backdrop-blur-sm">
               Premium Golf Accessories
             </span>
-            <h1 className="text-[#f9c821] text-5xl md:text-7xl font-serif font-bold leading-tight drop-shadow-lg">
-              Club Pro Green Grass <br />
+            <h1 className="text-[#f9c821] text-5xl md:text-6xl font-serif font-bold leading-tight drop-shadow-lg">
+              Exclusive Club Pro Greengrass Experience<br />
               <span className="text-white text-4xl">Build Your EZ-GO, Club Car & Yamaha.</span>
             </h1>
           </motion.div>
@@ -64,7 +65,7 @@ export default function HeroSection() {
   initial={{ opacity: 0, x: -50 }}
   animate={{ opacity: 1, x: 0 }}
   transition={{ duration: 0.8, delay: 0.4 }}
-  className="text-lg md:text-xl text-gray-200 font-light max-w-lg leading-relaxed"
+  className="text-md md:text-lg text-gray-200 font-light max-w-lg leading-relaxed"
 >
   We’re currently enhancing the Club Pro GreenGrass online experience to bring you a smoother, more powerful way to build and customize your products. During this development period, you may encounter occasional issues in the Build or Checkout process.<br /><br />
 
@@ -86,6 +87,9 @@ export default function HeroSection() {
               START BUILDING
             </button>
             </Link>
+            <button className="bg-[#f9c821] hover:bg-[#f9c821]-200 text-white px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition-all duration-300 flex transform hover:scale-105 shadow-lg shadow-accent/20">
+              QUICK SHOP  <ChevronRight className="w-5 h-5" />
+            </button>
             {/* <button className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition-all duration-300">
               Learn More
             </button> */}
